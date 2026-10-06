@@ -3,10 +3,10 @@ import {
   GitBranch,
   LayoutDashboard,
   Plus,
-  Upload,
   Users,
   Database,
   FileArchive,
+  Trash,
 } from 'lucide-react'
 import type { Repository } from '../types'
 import '../App.css'
@@ -14,8 +14,10 @@ import '../App.css'
 interface SidebarProps {
   repos: Repository[]
   activeRepoId: string | null
+  loading: boolean
   onSelectRepo: (id: string) => void
   onOpenUpload: () => void
+  onRemoveRepo: (id: string) => void
 }
 
 const NAV = [
@@ -27,8 +29,10 @@ const NAV = [
 export default function Sidebar({
   repos,
   activeRepoId,
+  loading,
   onSelectRepo,
   onOpenUpload,
+  onRemoveRepo,
 }: SidebarProps) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -70,16 +74,25 @@ export default function Sidebar({
       </div>
 
       <div className="repo-list">
+        {loading && repos.length === 0 && (
+          <p className="sidebar__placeholder">Loading repositories…</p>
+        )}
+        {!loading && repos.length === 0 && (
+          <p className="sidebar__placeholder">
+            No repositories yet. Add one via ZIP or clone URL.
+          </p>
+        )}
         {repos.map((repo) => (
-          <button
+          <div
             key={repo.id}
-            className={`repo-card${
-              repo.id === activeRepoId ? ' is-active' : ''
-            }`}
+            className={`repo-card${repo.id === activeRepoId ? ' is-active' : ''}`}
             onClick={() => {
               onSelectRepo(repo.id)
               navigate('/')
             }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onSelectRepo(repo.id)}
           >
             <div className="repo-card__top">
               <span className={`badge badge--${repo.source}`}>
@@ -91,24 +104,31 @@ export default function Sidebar({
                 {repo.source.toUpperCase()}
               </span>
               <span className="repo-card__name">{repo.name}</span>
+              <button
+                className="repo-card__remove"
+                title="Remove repository"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRemoveRepo(repo.id)
+                }}
+              >
+                <Trash size={13} />
+              </button>
             </div>
             <div className="repo-card__meta">
               <span>
-                <GitBranch size={12} /> {repo.commitCount.toLocaleString()}{' '}
-                commits
+                <GitBranch size={12} /> {repo.commitCount.toLocaleString()} commits
               </span>
               <span>
                 <Users size={12} /> {repo.authorCount} authors
               </span>
             </div>
-          </button>
+            {repo.error && <div className="repo-card__error">Index error: {repo.error}</div>}
+          </div>
         ))}
       </div>
 
-      <div className="sidebar__footer">
-        <Upload size={12} style={{ marginRight: 6, verticalAlign: -2 }} />
-        Deep-cloned history retained locally · v0.1
-      </div>
+      <div className="sidebar__footer">Deep history · rename detect 50% · mailmap aware</div>
     </aside>
   )
 }

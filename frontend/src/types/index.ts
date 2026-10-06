@@ -1,57 +1,57 @@
 // Domain models shared across the RAT frontend.
-// These mirror the concepts described in the requirements: repos, authors,
-// files/directories, commits and the four metric categories.
+// These mirror the backend API responses (see backend/src/model.ts).
 
-/** How a repository was brought into the tool. */
 export type RepoSource = 'zip' | 'url'
 
-/** A repository that has been added to the dashboard. */
+/** Repository as returned by GET /api/repos. */
 export interface Repository {
   id: string
   name: string
   source: RepoSource
-  /** Clone URL when source is 'url'; original filename when source is 'zip'. */
   origin: string
-  /** Total commits discovered after the deep clone / zip import. */
-  commitCount: number
-  /** Distinct (pre-merge) authors discovered. */
-  authorCount: number
+  ref: string
   addedAt: string
+  commitCount: number
+  authorCount: number
+  error?: string
 }
 
-/**
- * A raw git identity. The same human can appear multiple times under different
- * name/email combinations — which is why author merging / mailmap exists.
- */
-export interface RawAuthor {
-  id: string
+/** A raw git identity (a single name/email pair seen on a commit). */
+export interface RawIdentity {
   name: string
   email: string
 }
 
-/** A logical author after applying mailmap / manual merges. */
-export interface MergedAuthor {
+/** A logical author after applying mailmap + manual merges. */
+export interface AuthorView {
   id: string
-  /** Canonical display name chosen for the merged identity. */
   displayName: string
-  /** All raw identities folded into this author. */
-  sources: RawAuthor[]
-  /** True if a .mailmap entry produced this merge. */
+  email: string
+  sources: RawIdentity[]
   fromMailmap: boolean
+  fromManualMerge: boolean
+  commitCount: number
 }
 
-/** A commit, as surfaced for the commit-set filter. */
-export interface Commit {
+/** Persisted manual merge (backend AuthorMerge). */
+export interface AuthorMerge {
+  canonicalEmail: string
+  displayName: string
+  sources: RawIdentity[]
+}
+
+/** A commit for the manual commit picker. */
+export interface CommitView {
   hash: string
   shortHash: string
-  /** Canonical (merged) author id. */
+  committerDate: number
   authorId: string
-  authoredAt: string
+  authorName: string
   message: string
   filesChanged: number
 }
 
-/** A node in the repository file tree (file or directory). */
+/** A node in the repository file tree. */
 export interface TreeNode {
   id: string
   name: string
@@ -60,28 +60,50 @@ export interface TreeNode {
   children?: TreeNode[]
 }
 
-/** The four filter dimensions the dashboard must support. */
+/** The four filter dimensions the dashboard supports. */
+export type CommitMode = 'all' | 'range' | 'manual'
+
 export interface FilterState {
   repoId: string | null
   authorId: string | null
-  /** Selected file or directory path, if any. */
   nodePath: string | null
-  /** 'all' | 'range' | 'manual' commit selection mode. */
   commitMode: CommitMode
+  /** Date-input values (yyyy-mm-dd), converted to epoch seconds for requests. */
   rangeStart: string | null
   rangeEnd: string | null
-  /** Commit hashes selected manually when commitMode === 'manual'. */
   selectedCommits: string[]
 }
 
-export type CommitMode = 'all' | 'range' | 'manual'
+// ---- Analysis (matches backend AnalysisResult) ---------------------------
 
-/** A single scalar metric rendered inside a metric card. */
-export interface MetricStat {
-  label: string
-  value: string | number
-  /** Optional secondary line, e.g. a trend or unit. */
-  hint?: string
+export interface ObjectMetrics {
+  path: string
+  type: 'file' | 'directory'
+  added: number
+  deleted: number
+  growth: number
+  churn: number
+  modifications: number
+  modificationFrequency: number
+  churnRate: number
+}
+
+export interface AuthorChurn {
+  authorId: string
+  displayName: string
+  churn: number
+  modifications: number
+  ownership: number
+}
+
+export interface AnalysisResult {
+  scope: string
+  commitSetSize: number
+  repository: ObjectMetrics
+  files: ObjectMetrics[]
+  directories: ObjectMetrics[]
+  authors: AuthorChurn[]
+  activity: { bucket: string; added: number; deleted: number; commits: number }[]
 }
 
 /** Metric categories requested in the spec. */

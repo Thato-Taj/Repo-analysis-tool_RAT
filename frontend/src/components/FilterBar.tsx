@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
 import { CalendarRange, FolderTree, ListChecks, MousePointerClick, X } from 'lucide-react'
-import type { CommitMode, FilterState, MergedAuthor, Repository, TreeNode } from '../types'
+import type { AuthorView, CommitMode, FilterState, Repository, TreeNode } from '../types'
 
 interface FilterBarProps {
   filters: FilterState
   repos: Repository[]
-  authors: MergedAuthor[]
+  authors: AuthorView[]
   tree: TreeNode[]
   commits: { shortHash: string; message: string }[]
   onChange: (patch: Partial<FilterState>) => void

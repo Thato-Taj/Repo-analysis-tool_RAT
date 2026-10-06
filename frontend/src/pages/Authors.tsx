@@ -1,18 +1,20 @@
-import { Users } from 'lucide-react'
+import { LoaderCircle, Users } from 'lucide-react'
 import AuthorMergePanel from '../components/AuthorMergePanel'
-import type { MergedAuthor, Repository } from '../types'
+import type { AuthorView, Repository } from '../types'
 
 interface AuthorsPageProps {
   repo: Repository | null
-  authors: MergedAuthor[]
+  authors: AuthorView[]
+  loading: boolean
   onMerge: (keepId: string, dropId: string) => void
   onUnmerge: (authorId: string) => void
-  onImportMailmap: (content: string) => void
+  onImportMailmap: (content: string) => void | Promise<void>
 }
 
 export default function AuthorsPage({
   repo,
   authors,
+  loading,
   onMerge,
   onUnmerge,
   onImportMailmap,
@@ -37,6 +39,11 @@ export default function AuthorsPage({
             <Users size={34} />
             <h3>No repository selected</h3>
             <p>Pick a repository to review and merge its authors.</p>
+          </div>
+        ) : loading ? (
+          <div className="empty">
+            <LoaderCircle size={28} className="spin" />
+            <h3>Loading authors…</h3>
           </div>
         ) : (
           <AuthorMergePanel

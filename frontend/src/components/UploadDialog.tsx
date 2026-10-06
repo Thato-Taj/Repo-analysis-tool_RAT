@@ -1,37 +1,30 @@
 import { useState } from 'react'
-import {
-  CloudUpload,
-  FileArchive,
-  GitBranch,
-  Info,
-  Link2,
-  X,
-} from 'lucide-react'
+import { CloudUpload, FileArchive, Info, Link2, X, LoaderCircle } from 'lucide-react'
 import type { RepoSource } from '../types'
 
 interface UploadDialogProps {
   open: boolean
+  busy?: boolean
   onClose: () => void
   onSubmit: (payload: {
     mode: RepoSource
     name: string
     file?: File
     url?: string
-    includeGitHistory: boolean
   }) => void
 }
 
-export default function UploadDialog({ open, onClose, onSubmit }: UploadDialogProps) {
+export default function UploadDialog({ open, busy, onClose, onSubmit }: UploadDialogProps) {
   const [mode, setMode] = useState<RepoSource>('zip')
   const [name, setName] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [url, setUrl] = useState('')
-  const [includeGitHistory, setIncludeGitHistory] = useState(true)
   const [drag, setDrag] = useState(false)
 
   if (!open) return null
 
   const canSubmit =
+    !busy &&
     name.trim().length > 0 &&
     (mode === 'zip' ? !!file : /^https?:\/\/.+/.test(url.trim()))
 
@@ -40,10 +33,11 @@ export default function UploadDialog({ open, onClose, onSubmit }: UploadDialogPr
     setName('')
     setFile(null)
     setUrl('')
-    setIncludeGitHistory(true)
+    setDrag(false)
   }
 
   const handleClose = () => {
+    if (busy) return
     reset()
     onClose()
   }
@@ -54,10 +48,8 @@ export default function UploadDialog({ open, onClose, onSubmit }: UploadDialogPr
       mode,
       name: name.trim(),
       file: file ?? undefined,
-      url: url.trim() || undefined,
-      includeGitHistory,
+      url: mode === 'url' ? url.trim() : undefined,
     })
-    reset()
   }
 
   return (
@@ -65,7 +57,7 @@ export default function UploadDialog({ open, onClose, onSubmit }: UploadDialogPr
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__head">
           <h2>Add Repository</h2>
-          <button className="btn btn--ghost btn--sm" onClick={handleClose}>
+          <button className="btn btn--ghost btn--sm" onClick={handleClose} disabled={busy}>
             <X size={16} />
           </button>
         </div>
@@ -154,56 +146,36 @@ export default function UploadDialog({ open, onClose, onSubmit }: UploadDialogPr
                 onChange={(e) => setUrl(e.target.value)}
               />
               <span className="hint-text">
-                RAT performs a deep clone (full history, all branches) so every
-                commit can be attributed.
+                RAT performs a deep clone (full history) so every commit can be
+                attributed.
               </span>
             </div>
           )}
 
-          <div className="form-row">
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
-            >
-              <input
-                type="checkbox"
-                checked={includeGitHistory}
-                onChange={(e) => setIncludeGitHistory(e.target.checked)}
-              />
-              <GitBranch size={14} /> Include full commit history for metrics
-            </label>
-            <span className="hint-text">
-              Disabling this analyses working-tree content only — commit-set and
-              author metrics will be unavailable.
-            </span>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 10,
-              padding: 'var(--sp-3) var(--sp-4)',
-              background: 'var(--accent-soft)',
-              borderRadius: 'var(--r-sm)',
-              color: 'var(--accent)',
-              fontSize: '0.8rem',
-              alignItems: 'flex-start',
-            }}
-          >
+          <div className="callout">
             <Info size={15} style={{ flexShrink: 0, marginTop: 2 }} />
             <span>
-              After import, any <span className="mono">.mailmap</span> in the repo
-              is applied automatically. Remaining duplicate identities can be
-              merged manually under <b>Author Merging</b>.
+              After import, any <span className="mono">.mailmap</span> is applied
+              automatically. Remaining duplicate identities can be merged manually
+              under <b>Author Merging</b>.
             </span>
           </div>
         </div>
 
         <div className="modal__foot">
-          <button className="btn" onClick={handleClose}>
+          <button className="btn" onClick={handleClose} disabled={busy}>
             Cancel
           </button>
           <button className="btn btn--primary" disabled={!canSubmit} onClick={submit}>
-            <CloudUpload size={15} /> Import Repository
+            {busy ? (
+              <>
+                <LoaderCircle size={15} className="spin" /> Analysing…
+              </>
+            ) : (
+              <>
+                <CloudUpload size={15} /> Import Repository
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -1,4 +1,8 @@
 node_modules
-dist/
+dist
 .env
 .DS_Store
+
+# RAT runtime data (cloned repos + index cache)
+backend/data/
+.rat-fixtures/
