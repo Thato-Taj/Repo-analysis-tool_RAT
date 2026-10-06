@@ -21,7 +21,8 @@ A web dashboard that measures git repository activity **per author, per file, pe
 
 ## Features
 
-- **Repository upload** — two intake paths:
+- **Repository upload**
+- — two intake paths:
   - **ZIP archive** that includes the `.git` directory (so full history is preserved).
   - **Clone URL** — RAT performs a deep clone of the full history.
 - **Multiple repository support** — keep several repos registered and switch between them.
